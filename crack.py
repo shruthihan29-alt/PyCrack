@@ -24,30 +24,38 @@ def dictionary_attack(hash_to_crack, wordlist_path, algorithm="md5"):
         print("[-] Wordlist not found!")
     return None
 
+def brute_force_attack(hash_to_crack, max_length=6, algorithm="md5"):
+    print(f"[+] Starting Brute Force (max length: {max_length})...")
+    print("[!] This can be slow for longer lengths.\n")
+    
+    charset = "abcdefghijklmnopqrstuvwxyz0123456789"
+    start_time = time.time()
+    
+    for length in range(1, max_length + 1):
+        print(f"[*] Trying length {length}...")
+        total = len(charset) ** length
+        for candidate in tqdm(itertools.product(charset, repeat=length), total=total, desc=f"Len {length}"):
+            password = "".join(candidate)
+            if hash_password(password, algorithm) == hash_to_crack.lower():
+                print(f"\n[+] PASSWORD CRACKED: {password}")
+                print(f"[+] Time taken: {time.time() - start_time:.2f} seconds")
+                return password
+    return None
+
 if __name__ == "__main__":
     print("=== PyCrack - Password Cracker ===\n")
-    target_hash = input("Enter target hash: ").strip()
-    mode = input("1. Dictionary\n2. Brute Force\nChoose: ").strip()
-    algo = input("Hash type (md5/sha1/sha256): ").lower()
+    target_hash = input("Enter target hash: ").strip().lower()
+    mode = input("1. Dictionary Attack\n2. Brute Force Attack\nChoose (1/2): ").strip()
+    algo = input("Hash type (md5/sha1/sha256) [md5]: ").lower() or "md5"
 
     if mode == "1":
-        wordlist = input("Wordlist path: ")
+        wordlist = input("Wordlist path [rockyou.txt]: ") or "rockyou.txt"
         result = dictionary_attack(target_hash, wordlist, algo)
     else:
-        print("Brute force - testing short passwords...")
-        charset = "abcdefghijklmnopqrstuvwxyz0123456789"
-        result = None
-        start = time.time()
-        for length in range(1, 5):
-            for candidate in itertools.product(charset, repeat=length):
-                pw = "".join(candidate)
-                if hash_password(pw, algo) == target_hash.lower():
-                    result = pw
-                    break
-            if result: break
-        print(f"Time taken: {time.time()-start:.2f}s")
+        max_len = int(input("Max length to try (4-7 recommended): ") or "6")
+        result = brute_force_attack(target_hash, max_length=max_len, algorithm=algo)
 
     if result:
-        print(f"\n🎉 Cracked! Password: {result}")
+        print(f"\n🎉 SUCCESS! Password is: {result}")
     else:
-        print("\n[-] Not found.")
+        print("\n[-] Password not found.")
